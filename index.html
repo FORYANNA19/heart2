@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
+    <title>红心大战 · 百分计分板</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+        }
+        body {
+            background: linear-gradient(145deg, #1e3c2c 0%, #2a5a3a 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1.5rem;
+            margin: 0;
+        }
+        .scoreboard {
+            max-width: 1100px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(4px);
+            border-radius: 3rem 3rem 2rem 2rem;
+            box-shadow: 0 20px 30px rgba(0, 0, 0, 0.5), inset 0 1px 4px rgba(255, 255, 255, 0.3);
+            padding: 2rem 2rem 2.5rem 2rem;
+            border: 2px solid #c9a75e;
+        }
+        h1 {
+            text-align: center;
+            font-weight: 500;
+            letter-spacing: 2px;
+            color: #f9e7b3;
+            text-shadow: 3px 3px 0 #7b3f00, 0 2px 10px #ffd966;
+            font-size: 2.4rem;
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+            word-break: break-word;
+        }
+        h1 small {
+            font-size: 1rem;
+            display: block;
+            color: #e6d5a8;
+            text-shadow: 1px 1px 0 #3a2a0e;
+            letter-spacing: 1px;
+        }
+        /* 四宫格布局 */
+        .players-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2.2rem;
+        }
+        /* 玩家卡片 */
+        .player-card {
+            background: #fef9e6;
+            background-image: radial-gradient(circle at 30% 20%, #fff8e0, #ecd9b4);
+            border: 4px solid #ba8b4a;
+            border-radius: 2.5rem 2.5rem 2rem 2rem;
+            padding: 1.5rem 1.2rem 1.8rem;
+            box-shadow: 0 10px 0 #6b3f1c, 0 12px 18px rgba(0,0,0,0.3);
+            transition: all 0.15s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        .player-card.winner {
+            border: 6px solid #ffd966;
+            box-shadow: 0 0 0 4px #b8860b, 0 15px 0 #7a4c1d, 0 20px 25px black;
+            background: #fff2d0;
+            transform: scale(1.02);
+        }
+        .player-card.winner .player-name-input {
+            background: #ffe69b;
+            font-weight: bold;
+        }
+        /* 玩家名称行 */
+        .player-name-area {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1.2rem;
+            background: #cfaa7a;
+            padding: 0.4rem 1rem 0.4rem 1.2rem;
+            border-radius: 3rem;
+            border: 1px solid #f5d79c;
+            box-shadow: inset 0 2px 5px #8b5a2e;
+        }
+        .player-name-area label {
+            color: #2a1e0f;
+            font-weight: 600;
+            font-size: 1rem;
+            text-shadow: 0 1px 1px #ffddb0;
+        }
+        .player-name-input {
+            flex: 1;
+            background: #fff2d7;
+            border: 1px solid #7b4d26;
+            border-radius: 2rem;
+            padding: 0.4rem 1rem;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2f1f0c;
+            text-align: center;
+            outline: none;
+            transition: 0.1s;
+            min-width: 0;
+            width: 100%;
+        }
+        .player-name-input:focus {
+            border-color: #d4a259;
+            box-shadow: 0 0 0 3px #f3ce8a;
+        }
+        /* 总分大显示 */
+        .total-score-box {
+            background: #2f261a;
+            border-radius: 4rem;
+            padding: 0.8rem 1rem;
+            margin: 0.5rem 0 1.3rem 0;
+            border: 3px solid #b68b40;
+            box-shadow: inset 0 0 0 2px #6b4f29, 0 5px 0 #3f2f18;
+            text-align: center;
+        }
+        .total-score-label {
+            font-size: 1rem;
+            color: #eedbaa;
+            letter-spacing: 2px;
+            margin-right: 0.75rem;
+        }
+        .total-score {
+            font-size: 4rem;
+            font-weight: 800;
+            line-height: 1;
+            color: #fadf9e;
+            text-shadow: 3px 3px 0 #8b5a2e;
+            display: inline-block;
+            min-width: 4rem;
+        }
+        /* 本局得分控件 */
+        .round-control {
+            background: #d8c29b;
+            border-radius: 3rem;
+            padding: 1rem 0.8rem;
+            border: 2px solid #9e784c;
+            margin-bottom: 1.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .round-control label {
+            font-weight: 600;
+            color: #3a2b15;
+            font-size: 1.1rem;
+            background: #f7e3c5;
+            padding: 0.2rem 1rem;
+            border-radius: 2rem;
+            border: 1px solid #b68f57;
+        }
+        .round-input {
+            width: 5.5rem;
+            padding: 0.6rem 0.2rem 0.6rem 1rem;
+            font-size: 1.6rem;
+            font-weight: 700;
+            text-align: center;
+            background: #fcf3de;
+            border: 2px solid #785f36;
+            border-radius: 2.5rem;
+            color: #2d200b;
+            -moz-appearance: textfield;
+        }
+        .round-input:focus {
+            border-color: #c9a032;
+            background: #ffffff;
+            box-shadow: 0 0 0 3px #ffd58c;
+        }
+        .round-input::-webkit-outer-spin-button,
+        .round-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        /* 加分按钮 */
+        .add-btn {
+            background: #c59a6b;
+            border: none;
+            border-bottom: 6px solid #764b22;
+            font-size: 1.5rem;
+            font-weight: bold;
+            padding: 0.8rem 1rem;
+            border-radius: 3rem;
+            color: #251d0e;
+            text-shadow: 0 1px 2px #ffd58c;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.06s linear;
+            box-shadow: 0 4px 8px #3f2f1d;
+            width: 100%;
+            max-width: 240px;
+            margin: 0 auto;
+        }
+        .add-btn:active {
+            transform: translateY(4px);
+            border-bottom-width: 2px;
+            background: #b58552;
+        }
+        .add-btn:disabled {
+            opacity: 0.45;
+            border-bottom-width: 2px;
+            transform: translateY(4px);
+            pointer-events: none;
+            background: #9b856b;
+            border-bottom-color: #5b4a33;
+            color: #494949;
+            text-shadow: none;
+            box-shadow: 0 2px 5px #2b2219;
+        }
+        /* 底部栏 */
+        .footer-bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            background: #624c33;
+            border-radius: 5rem;
+            padding: 1rem 2rem;
+            border: 3px solid #dbb570;
+            gap: 1rem;
+        }
+        .winner-message {
+            background: #edc16a;
+            border-radius: 3rem;
+            padding: 0.8rem 2rem;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #2b1d07;
+            box-shadow: inset 0 2px 8px #ba8b3a, 0 4px 0 #61471e;
+            flex: 2;
+            min-width: 240px;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+        .reset-btn {
+            background: #edd7b0;
+            border: none;
+            border-bottom: 5px solid #856f47;
+            font-size: 1.6rem;
+            font-weight: 600;
+            padding: 0.7rem 2rem;
+            border-radius: 4rem;
+            color: #2b200d;
+            cursor: pointer;
+            transition: 0.07s;
+            box-shadow: 0 5px 10px #232013;
+            min-width: 160px;
+        }
+        .reset-btn:active {
+            transform: translateY(4px);
+            border-bottom-width: 2px;
+        }
+        /* 小屏幕适配 */
+        @media (max-width: 700px) {
+            body { padding: 0.7rem; }
+            .scoreboard { padding: 1rem; }
+            .players-grid { gap: 1rem; }
+            .player-card { padding: 1rem 0.8rem; }
+            .total-score { font-size: 3rem; }
+            .round-input { width: 4.5rem; font-size: 1.4rem; }
+            .add-btn { font-size: 1.2rem; }
+            .footer-bar { flex-direction: column; }
+            .winner-message { font-size: 1.3rem; padding: 0.5rem 1rem; }
+            .reset-btn { font-size: 1.4rem; width: 100%; }
+        }
+        @media (max-width: 450px) {
+            .players-grid { grid-template-columns: 1fr; } /* 极窄就单列 */
+        }
+        /* 装饰 */
+        .hearts-symbol {
+            color: #c9302c;
+            filter: drop-shadow(0 2px 2px #440000);
+            font-size: 1.8rem;
+            line-height: 1;
+            margin: 0 2px;
+        }
+    </style>
+</head>
+<body>
+<div class="scoreboard">
+    <h1>
+        ♥ 红心大战 · 百分赛 ♥
+        <small>每局输入得分，先满100分者获胜</small>
+    </h1>
+
+    <!-- 四个玩家区域 (grid) -->
+    <div class="players-grid" id="playersGrid">
+        <!-- 玩家1 -->
+        <div class="player-card" id="player1">
+            <div class="player-name-area">
+                <label>👤</label>
+                <input type="text" class="player-name-input" value="玩家 1" maxlength="16" placeholder="名字">
+            </div>
+            <div class="total-score-box">
+                <span class="total-score-label">总分</span>
+                <span class="total-score" id="score1">0</span>
+            </div>
+            <div class="round-control">
+                <label>本局</label>
+                <input type="number" class="round-input" id="round1" value="0" min="0" max="26" step="1" inputmode="numeric">
+            </div>
+            <button class="add-btn" data-player="1">➕ 记录</button>
+        </div>
+        <!-- 玩家2 -->
+        <div class="player-card" id="player2">
+            <div class="player-name-area">
+                <label>👤</label>
+                <input type="text" class="player-name-input" value="玩家 2" maxlength="16" placeholder="名字">
+            </div>
+            <div class="total-score-box">
+                <span class="total-score-label">总分</span>
+                <span class="total-score" id="score2">0</span>
+            </div>
+            <div class="round-control">
+                <label>本局</label>
+                <input type="number" class="round-input" id="round2" value="0" min="0" max="26" step="1" inputmode="numeric">
+            </div>
+            <button class="add-btn" data-player="2">➕ 记录</button>
+        </div>
+        <!-- 玩家3 -->
+        <div class="player-card" id="player3">
+            <div class="player-name-area">
+                <label>👤</label>
+                <input type="text" class="player-name-input" value="玩家 3" maxlength="16" placeholder="名字">
+            </div>
+            <div class="total-score-box">
+                <span class="total-score-label">总分</span>
+                <span class="total-score" id="score3">0</span>
+            </div>
+            <div class="round-control">
+                <label>本局</label>
+                <input type="number" class="round-input" id="round3" value="0" min="0" max="26" step="1" inputmode="numeric">
+            </div>
+            <button class="add-btn" data-player="3">➕ 记录</button>
+        </div>
+        <!-- 玩家4 -->
+        <div class="player-card" id="player4">
+            <div class="player-name-area">
+                <label>👤</label>
+                <input type="text" class="player-name-input" value="玩家 4" maxlength="16" placeholder="名字">
+            </div>
+            <div class="total-score-box">
+                <span class="total-score-label">总分</span>
+                <span class="total-score" id="score4">0</span>
+            </div>
+            <div class="round-control">
+                <label>本局</label>
+                <input type="number" class="round-input" id="round4" value="0" min="0" max="26" step="1" inputmode="numeric">
+            </div>
+            <button class="add-btn" data-player="4">➕ 记录</button>
+        </div>
+    </div>
+
+    <!-- 底部：胜者信息 + 重置按钮 -->
+    <div class="footer-bar">
+        <div class="winner-message" id="winnerMessage"></div>
+        <button class="reset-btn" id="resetGameBtn">🔄 重置对局</button>
+    </div>
+    <div style="text-align: center; margin-top: 0.8rem; color: #eeddaa; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; gap: 6px;">
+        <span class="hearts-symbol">♥</span> 每局得分建议 0~26  <span class="hearts-symbol">♥</span> 黑桃皇后13分  <span class="hearts-symbol">♥</span>
+    </div>
+</div>
+
+<script>
+    (function() {
+        // 获取所有需要的元素
+        const playerCards = document.querySelectorAll('.player-card');
+        const addButtons = document.querySelectorAll('.add-btn');
+        const resetBtn = document.getElementById('resetGameBtn');
+        const winnerMessageDiv = document.getElementById('winnerMessage');
+
+        // 总分数显示span的数组 (根据id或class获取，这里直接用class方便)
+        // 但我们在函数内动态查询，保持实时
+
+        // ----- 核心：检查胜者，禁用/启用按钮，高亮，显示消息 -----
+        function checkAndHandleWinner() {
+            const cards = document.querySelectorAll('.player-card');
+            let highestScore = -1;
+            let winnerCard = null;
+
+            // 找出最高分且≥100的玩家 (若多人≥100，取分数最高的；同分取第一个)
+            cards.forEach(card => {
+                const scoreSpan = card.querySelector('.total-score');
+                const score = parseInt(scoreSpan.innerText, 10) || 0;
+                if (score >= 100 && score > highestScore) {
+                    highestScore = score;
+                    winnerCard = card;
+                }
+            });
+
+            // 获取所有加分按钮
+            const allAddBtns = document.querySelectorAll('.add-btn');
+
+            if (winnerCard) {
+                // 有获胜者: 高亮对应卡片
+                cards.forEach(c => c.classList.remove('winner'));
+                winnerCard.classList.add('winner');
+
+                // 获取胜者名字 (优先取输入框，若空白则用“玩家N”)
+                const nameInput = winnerCard.querySelector('.player-name-input');
+                let winnerName = nameInput.value.trim();
+                if (winnerName === '') {
+                    // 根据索引生成默认名
+                    const index = Array.from(cards).indexOf(winnerCard) + 1;
+                    winnerName = `玩家 ${index}`;
+                }
+
+                winnerMessageDiv.innerText = `🏆 获胜者：${winnerName}  (总分 ${highestScore}) 🏆`;
+
+                // 禁用所有加分按钮
+                allAddBtns.forEach(btn => btn.disabled = true);
+            } else {
+                // 无获胜者：移除所有高亮，清空消息，启用所有按钮
+                cards.forEach(c => c.classList.remove('winner'));
+                winnerMessageDiv.innerText = '';
+                allAddBtns.forEach(btn => btn.disabled = false);
+            }
+        }
+
+        // ----- 加分功能 (给指定卡片加分) -----
+        function handleAddScore(button) {
+            // 找到所属卡片
+            const card = button.closest('.player-card');
+            if (!card) return;
+
+            // 获取本局输入框和总分元素
+            const roundInput = card.querySelector('.round-input');
+            const totalSpan = card.querySelector('.total-score');
+
+            // 解析本局得分
+            let roundScore = parseInt(roundInput.value, 10);
+            if (isNaN(roundScore) || roundScore < 0) roundScore = 0;
+
+            // 如果得分为0，不进行任何变动 (但也可以允许加0，不过无意义，直接忽略)
+            if (roundScore === 0) {
+                // 可选择轻提示，但这里保持静默。
+                return;
+            }
+
+            // 当前总分
+            let currentTotal = parseInt(totalSpan.innerText, 10) || 0;
+            currentTotal += roundScore;
+            totalSpan.innerText = currentTotal;
+
+            // 将本局输入框置0 (方便下一轮录入)
+            roundInput.value = 0;
+
+            // 检查胜者情况 (可能会禁用按钮或高亮)
+            checkAndHandleWinner();
+        }
+
+        // ----- 为所有加分按钮绑定事件 -----
+        addButtons.forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                // 如果按钮已经被禁用 (防止某些边缘情况手动调用)
+                if (this.disabled) return;
+                handleAddScore(this);
+            });
+        });
+
+        // ----- 重置功能：所有分数归零，清空胜者状态，启用按钮，输入框置0 -----
+        function resetGame() {
+            // 所有总分归零
+            document.querySelectorAll('.total-score').forEach(span => {
+                span.innerText = '0';
+            });
+            // 所有本局输入框置0
+            document.querySelectorAll('.round-input').forEach(input => {
+                input.value = '0';
+            });
+            // 移除获胜样式，清空消息，启用所有加分按钮
+            playerCards.forEach(c => c.classList.remove('winner'));
+            winnerMessageDiv.innerText = '';
+            document.querySelectorAll('.add-btn').forEach(btn => btn.disabled = false);
+        }
+
+        resetBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            resetGame();
+        });
+
+        // 可选：限制输入框手动输入超过26的提醒？ 不强制，但可以温和提示
+        document.querySelectorAll('.round-input').forEach(input => {
+            input.addEventListener('change', function() {
+                let val = parseInt(this.value, 10);
+                if (isNaN(val)) val = 0;
+                if (val < 0) val = 0;
+                if (val > 26) {
+                    // 红心大战单局最高全收26分，这里温和提醒，但不强制阻断
+                    // 但仍然可以记录，只是标红提示一下 (可视反馈)
+                    this.style.backgroundColor = '#ffe1b9';
+                    setTimeout(() => this.style.backgroundColor = '', 800);
+                }
+                this.value = val; // 保证非负
+            });
+            input.addEventListener('focus', function() {
+                this.style.backgroundColor = '#fffcf0';
+            });
+        });
+
+        // 初始化检查 (保证刚开始无胜者、按钮启用)
+        checkAndHandleWinner();
+
+        // 额外：如果玩家把名字删空，胜者展示时能友好显示（已在check函数中处理）
+    })();
+</script>
+</body>
+</html>
